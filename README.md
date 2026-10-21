@@ -144,13 +144,13 @@ below are provided separately; this section describes how they fit together.
 - **Loop guard** (same PR). After 3 redirects in 10 s the redirect pauses for a minute.
 - **Windows scripts** (requires PR: Windows scripts). Set `TV_HOST` to the TV's `ip:port`
   (or pass `-Tv`) and run:
-  - `launcheruild-and-install.ps1`: builds through Git Bash, installs, turns on the redirect,
+  - `launcher\build-and-install.ps1`: builds through Git Bash, installs, turns on the redirect,
     verifies it and rolls back on failure. `-DryRun` prints the commands.
-  - `toolsire-check.ps1 -ListFile <list>`: lists packages an Amazon update turned back on
+  - `tools\fire-check.ps1 -ListFile <list>`: lists packages an Amazon update turned back on
     (`-Fix` turns them off again) and checks the redirect is still running.
   - `tools\debloat-loop.ps1 -ListFile <list>`: disables one package at a time with a health check
-    and rollback, and appends restore lines to `backupestore.ps1`.
-  - `toolsire-home-off.ps1`: turns the redirect off (`-Uninstall` also removes the app).
+    and rollback, and appends restore lines to `backup\restore.ps1`.
+  - `tools\fire-home-off.ps1`: turns the redirect off (`-Uninstall` also removes the app).
   - `tools\keepalive.ps1`: keeps ADB reachable while you work.
 - **Debloat list:** [`examples/amazon-fire-tv-aftalmo/debloat.txt`](examples/amazon-fire-tv-aftalmo/debloat.txt)
   is an aggressive list for this model. Fire OS turns Alexa (`com.amazon.vizzini`) back on at every
