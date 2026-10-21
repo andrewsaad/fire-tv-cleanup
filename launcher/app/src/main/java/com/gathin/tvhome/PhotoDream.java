@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Screensaver: the Manhattan photos full screen, each slowly zooming in, crossfading every SLIDE_MS, with a
  * small clock in the corner. Chosen with:
- *   settings put secure screensaver_components com.gathin.tvhome/com.gathin.tvhome.PhotoDream
+ *   settings put secure screensaver_components com.andrewsaad.myhome/com.gathin.tvhome.PhotoDream
  * and Amazon's back with:
  *   settings put secure screensaver_components com.amazon.ftv.screensaver/.app.services.ScreensaverService
  */
