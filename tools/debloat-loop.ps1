@@ -1,0 +1,51 @@
+param(
+  [string]$Tv = "192.168.68.112:5555",
+  [string]$Adb = "C:\platform-tools\adb.exe",
+  [string]$ListFile = "$PSScriptRoot\..\examples\amazon-fire-tv-aftalmo\debloat.txt",
+  [string]$Restore = "C:\dev\clean_tv\backup\restore.ps1",
+  [string]$AppId = "com.andrewsaad.myhome",
+  [switch]$DryRun
+)
+
+# Disables the packages in a debloat list one at a time (pm disable-user --user 0), health-checks the TV after each,
+# and re-enables the package if the TV looks unhealthy. Each success appends a restore line to $Restore (never overwritten).
+# Healthy = Home resolves to Amazon's launcher or $AppId, that app is running, and the TV can still reach the network.
+# The never-list in fire-lib.ps1 (home, settings, input, network, auth, OTA, the 4 apps, ...) is enforced whatever the file says.
+# -DryRun only lists what it would do; it changes nothing on the TV.
+. "$PSScriptRoot\fire-lib.ps1"
+$candidates = Read-DebloatList $ListFile -AppId $AppId
+
+function Healthy {
+  $h = (Adb-Sh "cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME") | Select-Object -Last 1
+  if ($h -match 'com\.amazon\.tv\.launcher') { $pkg = 'com.amazon.tv.launcher' }
+  elseif ($h -match [regex]::Escape($AppId)) { $pkg = $AppId }
+  else { return $false }
+  # Either launcher counts as healthy if it is the home handler and its process is alive (ours may be idle: fall back to Amazon's).
+  if (-not (Adb-Sh "pidof $pkg") -and -not (Adb-Sh "pidof com.amazon.tv.launcher")) { return $false }
+  $p = (Adb-Sh "ping -c 1 -W 2 8.8.8.8") -join ' '
+  return ($p -match '1 received')
+}
+
+if (-not (Healthy)) { Write-Output "ABORT: TV not healthy before start"; exit 1 }
+$installed = (Adb-Sh "pm list packages") -replace '^package:', ''
+$disabledNow = (Adb-Sh "pm list packages -d") -replace '^package:', ''
+$log = @()
+foreach ($p in $candidates) {
+  if ($installed -notcontains $p) { $log += "$p -> not installed"; continue }
+  if ($disabledNow -contains $p) { $log += "$p -> already disabled"; continue }
+  if ($DryRun) { $log += "$p -> [dry-run] would disable (pm disable-user --user 0 $p), health-check, restore line"; continue }
+  $out = (Adb-Sh "pm disable-user --user 0 $p") -join ' '
+  if ($out -notmatch 'disabled-user') { $log += "$p -> REFUSED (protected)"; continue }
+  Start-Sleep -Seconds 3
+  if (Healthy) {
+    $log += "$p -> disabled, healthy"
+    Add-Content $Restore ('& $a -s $s shell pm enable ' + $p) -Encoding utf8
+  } else {
+    Adb-Sh "pm enable $p" | Out-Null
+    $log += "$p -> UNHEALTHY, rolled back"
+    Start-Sleep -Seconds 5
+    if (-not (Healthy)) { $log += "STOP: TV still unhealthy after rollback of $p"; break }
+  }
+}
+$log
+if ($log -match '^STOP|UNHEALTHY') { exit 1 }
