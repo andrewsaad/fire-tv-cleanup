@@ -53,7 +53,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * tvOS style home: black, a pinned dock row, an app grid, and one glass highlight that springs between tiles.
+ * tvOS style home: black, one row of wide app tiles pinned at the bottom (no app grid).
  */
 public class MainActivity extends Activity implements AppAdapter.TileListener {
 
@@ -70,10 +70,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView heroName;
     private View dockDot;
     // macOS dock magnification: focused icon and its neighbours grow from their bottom edge and lift.
-    private static final float DOCK_MAGNIFY = 1.30f;
-    private static final float DOCK_NEIGHBOUR = 1.10f;
-    private static final float DOCK_LIFT_DP = 10f;
-    private static final float DOCK_NEIGHBOUR_LIFT_DP = 4f;
+    private static final float DOCK_MAGNIFY = 1.12f;   // wide tiles: much gentler than square dock icons
+    private static final float DOCK_NEIGHBOUR = 1.0f;
+    private static final float DOCK_LIFT_DP = 6f;
+    private static final float DOCK_NEIGHBOUR_LIFT_DP = 0f;
     private GradientDrawable ambientGlow;
     private int ambientColor;
     private boolean heroShown;
@@ -136,34 +136,14 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi = findViewById(R.id.btnWifi);
 
         grid = findViewById(R.id.grid);
-        // One span unit per cell of any dock size 1..COLUMNS: the dock row splits evenly, grid rows are COLUMNS wide.
-        final int spans = lcmUpTo(COLUMNS);
-        GridLayoutManager glm = new GridLayoutManager(this, spans);
-        glm.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
-            @Override
-            public int getSpanSize(int position) {
-                return adapter.isDocked(position) ? spans / adapter.dockCount() : spans / COLUMNS;
-            }
-        });
-        grid.setLayoutManager(glm);
-        grid.setHasFixedSize(true);
+        // One row: COLUMNS equal cells, tiles start at the left.
+        grid.setLayoutManager(new GridLayoutManager(this, COLUMNS));
         grid.setItemAnimator(null);
 
         grid.setLayoutAnimation(new LayoutAnimationController(
                 AnimationUtils.loadAnimation(this, R.anim.tile_enter), 0.06f));
         adapter = new AppAdapter(this, this, COLUMNS);
-        grid.addItemDecoration(new DockDecoration(adapter, COLUMNS, density));
         grid.setAdapter(adapter);
-
-        // tvOS layout: push the dock row to the bottom of the screen; the grid hides below until you press Down.
-        grid.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) -> {
-            int h = b - t;
-            int dockRow = (int) ((101 + 6 + 12) * density);   // item height plus DockDecoration offsets
-            int want = Math.max(0, h - dockRow + (int) (8 * density));
-            if (grid.getPaddingTop() != want) {
-                grid.setPadding(grid.getPaddingLeft(), want, grid.getPaddingRight(), grid.getPaddingBottom());
-            }
-        });
 
         // Keep the glass glued to its tile while the grid scrolls.
         grid.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -308,14 +288,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void onDockFocused(int position, View card) {
         hideGlass();
-        View item = (View) card.getParent();
-        int decoratedTop = item.getTop() - (int) (6 * density);
-        int dy = decoratedTop - grid.getPaddingTop();
-        if (Math.abs(dy) > 1) grid.smoothScrollBy(0, dy);
         magnifyDock(position);
         Rect r = new Rect(0, 0, card.getWidth(), card.getHeight());
         root.offsetDescendantRectToMyCoords(card, r);
-        r.offset(0, -dy);
         showHero(position, r);
     }
 
@@ -419,23 +394,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         return true;
     }
 
-    private static int lcmUpTo(int n) {
-        int l = 1;
-        for (int i = 2; i <= n; i++) {
-            int a = l, b = i;
-            while (b != 0) { int t = a % b; a = b; b = t; }
-            l = l / a * i;
-        }
-        return l;
-    }
-
-    // ---- dock editing ----------------------------------------------------------------------------
+    // ---- app menu (App Info; the row is set in config.xml) ----------------------------------------------------------------------------
 
     @Override
     public void onTileMenu(int position, View card) {
         String pkg = adapter.pkgAt(position);
         boolean docked = adapter.isDocked(position);
-        int dock = adapter.dockCount();
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);
         LinearLayout rows = panel.findViewById(R.id.rows);
         int width = (int) (220 * density);
@@ -445,25 +409,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         popup.setAnimationStyle(0);
         popup.setElevation(0f);
 
-        if (docked) {
-            addInputRow(rows, popup, R.drawable.ic_unpin, getString(R.string.unpin_from_dock), -1, () -> {
-                adapter.unpin(pkg);
-                focusAfterLayout(pkg);
-            });
-            if (position > 0) addInputRow(rows, popup, R.drawable.ic_left, getString(R.string.move_left), -1, () -> {
-                adapter.move(pkg, -1);
-                focusAfterLayout(pkg);
-            });
-            if (position < dock - 1) addInputRow(rows, popup, R.drawable.ic_right, getString(R.string.move_right), -1, () -> {
-                adapter.move(pkg, 1);
-                focusAfterLayout(pkg);
-            });
-        } else {
-            addInputRow(rows, popup, R.drawable.ic_pin, getString(R.string.pin_to_dock), -1, () -> {
-                if (adapter.pin(pkg)) focusAfterLayout(pkg);
-                else Toast.makeText(this, R.string.dock_full, Toast.LENGTH_SHORT).show();
-            });
-        }
         addInputRow(rows, popup, R.drawable.ic_info, getString(R.string.app_info), -1, () ->
                 open(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + pkg))));
 
@@ -504,28 +449,6 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         });
         popup.showAsDropDown(anchor, anchor.getWidth() - width, (int) (10 * density), Gravity.START);
         rows.getChildAt(0).requestFocus();
-    }
-
-    /** After the dock changes, focus the app's new tile once the grid has re-laid out. */
-    private void focusAfterLayout(String pkg) {
-        hideHero();
-        ((GridLayoutManager) grid.getLayoutManager()).getSpanSizeLookup().invalidateSpanIndexCache();
-        grid.invalidateItemDecorations();
-        grid.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                grid.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                int pos = adapter.positionOf(pkg);
-                RecyclerView.ViewHolder vh = pos >= 0 ? grid.findViewHolderForAdapterPosition(pos) : null;
-                if (vh == null) {
-                    focusTile(Math.max(pos, 0));
-                    return;
-                }
-                View c = vh.itemView.findViewById(R.id.card);
-                c.requestFocus();
-                onTileFocused(pos, c);
-            }
-        });
     }
 
     private void focusTile(int position) {

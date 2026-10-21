@@ -166,7 +166,7 @@
             </LinearLayout>
         </RelativeLayout>
 
-        <!-- The wrapper clips at the grid's edge; the grid itself must not clip so scaled tiles can overflow their cells. -->
+        <!-- One row of wide tiles at the bottom; the grid itself must not clip so scaled tiles can overflow their cells. -->
         <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -176,11 +176,9 @@
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/grid"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:paddingStart="264dp"
-                android:paddingEnd="264dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="40dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:paddingBottom="48dp"
                 android:clipToPadding="false"
                 android:clipChildren="false"
                 android:overScrollMode="never"

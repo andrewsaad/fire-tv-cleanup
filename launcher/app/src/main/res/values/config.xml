@@ -5,13 +5,12 @@
 -->
 <resources>
 
-    <!-- Starting dock, in this order. After that the dock is edited on the TV (hold OK or press Menu on an app)
-         and saved on the device. Missing apps are skipped. -->
+    <!-- The one row of tiles, in this order (at most "columns"). Missing apps are skipped. No other apps are shown. -->
     <string-array name="dock_apps">
         <item>com.amazon.firetv.youtube</item>
-        <item>com.netflix.ninja</item>
-        <item>com.amazon.firebat</item>
-        <item>com.apple.airplay.amazon.airplay</item>
+        <item>com.plexapp.android</item>
+        <item>com.nst.iptvsmarterstvbox</item>
+        <item>com.genraltv.app</item>
     </string-array>
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
@@ -26,6 +25,6 @@
     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
     <string name="live_tv_package" translatable="false">com.amazon.tv.livetv</string>
 
-    <!-- Tiles per row in the grid, and the most apps the dock can hold. -->
+    <!-- Tiles across the screen: the most apps the row can hold. -->
     <integer name="columns">4</integer>
 </resources>

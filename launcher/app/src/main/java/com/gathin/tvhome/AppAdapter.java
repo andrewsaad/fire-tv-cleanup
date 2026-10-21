@@ -28,15 +28,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
- * App tiles. The first {@link #dockCount()} positions are the pinned dock, in the order the user set; the rest
- * is alphabetical. The pinned list is saved on the device and starts from res/values/config.xml (dock_apps).
+ * App tiles: one row of wide banner tiles, only the apps listed in res/values/config.xml (dock_apps), in that
+ * order. Apps that are not installed are skipped. There is no app grid.
  */
 public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
@@ -50,21 +48,11 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         void onTileMenu(int position, View card);
     }
 
-    // Optional square icons, drawn locally by tools/make_dock_icons.py and kept out of git (they are trademarked
-    // logos). Looked up by name so the app builds without them; missing ones fall back to the app's own icon.
-    private static final Map<String, String> DOCK_ICONS = new HashMap<>();
-    static {
-        DOCK_ICONS.put("com.amazon.firetv.youtube", "dock_youtube");
-        DOCK_ICONS.put("com.netflix.ninja", "dock_netflix");
-        DOCK_ICONS.put("com.amazon.firebat", "dock_prime");
-        DOCK_ICONS.put("com.apple.airplay.amazon.airplay", "dock_airplay");
-    }
-
     static final class Entry {
         final String label;
         final ComponentName component;
         final String pkg;
-        /** Square dock art, or null: then the app's own icon sits on a graphite tile. */
+        /** The app's TV banner, or null: then the app's own icon sits on a graphite tile. */
         final Drawable square;
         final Drawable icon;
         int ambient;
@@ -83,11 +71,11 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
     private final Context ctx;
     private final TileListener listener;
-    private static final String PREFS = "tvhome";
-    private static final String PREF_DOCK = "dock";
+    /** Side margin of the activity's layout, and the gap between tiles (dp). */
+    private static final int SIDE_MARGIN_DP = 56, TILE_GAP_DP = 10;
     private final int maxDock;
     private int dockCount;
-    /** Pinned packages in dock order, including any that are not installed right now. */
+    /** Packages to show, in order (config.xml dock_apps), including any that are not installed right now. */
     private final List<String> pinned = new ArrayList<>();
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
@@ -97,10 +85,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         this.ctx = ctx;
         this.listener = listener;
         this.maxDock = maxDock;
-        String saved = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(PREF_DOCK, null);
-        pinned.addAll(saved != null
-                ? (saved.isEmpty() ? Collections.emptyList() : Arrays.asList(saved.split(",")))
-                : Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
+        pinned.addAll(Arrays.asList(ctx.getResources().getStringArray(R.array.dock_apps)));
         this.hidden = new HashSet<>(Arrays.asList(ctx.getResources().getStringArray(R.array.hidden_apps)));
     }
 
@@ -113,7 +98,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         for (ResolveInfo ri : found) {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
-            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg)) continue;
+            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg) || !pinned.contains(pkg)) continue;
             // One tile per app: skip extra launcher entries (AirPlay registers three).
             Intent main = pm.getLeanbackLaunchIntentForPackage(pkg);
             ComponentName mainComponent = main != null ? main.getComponent() : null;
@@ -121,30 +106,29 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             if (!seen.add(pkg)) continue;
             Drawable icon = ri.loadIcon(pm);
             String label = String.valueOf(ri.loadLabel(pm));
-            String squareName = DOCK_ICONS.get(pkg);
-            int square = squareName == null ? 0
-                    : ctx.getResources().getIdentifier(squareName, "drawable", ctx.getPackageName());
-            fresh.add(new Entry(label, new ComponentName(pkg, ri.activityInfo.name),
-                    square != 0 ? ctx.getDrawable(square) : null, icon));
+            ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
+            fresh.add(new Entry(label, component, banner(pm, component), icon));
         }
-        Collections.sort(fresh, (a, b) -> {
-            int fa = pinned.indexOf(a.pkg), fb = pinned.indexOf(b.pkg);
-            if (fa >= 0 || fb >= 0) {
-                if (fa < 0) return 1;
-                if (fb < 0) return -1;
-                return Integer.compare(fa, fb);
-            }
-            return a.label.compareToIgnoreCase(b.label);
-        });
+        Collections.sort(fresh, (a, b) -> Integer.compare(pinned.indexOf(a.pkg), pinned.indexOf(b.pkg)));
         items.clear();
         items.addAll(fresh);
-        int docked = 0;
-        while (docked < items.size() && pinned.contains(items.get(docked).pkg)) docked++;
-        dockCount = Math.min(docked, maxDock);
+        while (items.size() > maxDock) items.remove(items.size() - 1);
+        dockCount = items.size();
         notifyDataSetChanged();
     }
 
-    // ---- dock editing ----------------------------------------------------------------------------
+    /** The activity's TV banner (from its leanback launch intent), else the application's, else null. */
+    private static Drawable banner(PackageManager pm, ComponentName component) {
+        try {
+            Drawable d = pm.getActivityBanner(component);
+            if (d != null) return d;
+            return pm.getApplicationBanner(component.getPackageName());
+        } catch (PackageManager.NameNotFoundException e) {
+            return null;
+        }
+    }
+
+    // ---- dock ------------------------------------------------------------------------------------
 
     int dockCount() {
         return dockCount;
@@ -163,39 +147,16 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return -1;
     }
 
-    /** Adds the app to the end of the dock. False when the dock is full. */
-    boolean pin(String pkg) {
-        if (pinned.contains(pkg)) return true;
-        if (dockCount >= maxDock) return false;
-        pinned.removeIf(p -> positionOf(p) < 0);   // forget uninstalled pins so they don't hold slots
-        pinned.add(pkg);
-        saveAndReload();
-        return true;
-    }
-
-    void unpin(String pkg) {
-        pinned.remove(pkg);
-        saveAndReload();
-    }
-
-    /** Swaps the app with its dock neighbour on the left (-1) or right (+1). */
-    void move(String pkg, int delta) {
-        int from = pinned.indexOf(pkg), to = from + delta;
-        if (from < 0 || to < 0 || to >= pinned.size()) return;
-        Collections.swap(pinned, from, to);
-        saveAndReload();
-    }
-
-    private void saveAndReload() {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-                .putString(PREF_DOCK, String.join(",", pinned)).apply();
-        reload();
-    }
-
     @NonNull
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_app, parent, false);
+        // Wide 16:9 tile: COLUMNS across the screen between the side margins, with a gap between tiles.
+        float d = v.getResources().getDisplayMetrics().density;
+        int cell = (v.getResources().getDisplayMetrics().widthPixels - Math.round(2 * SIDE_MARGIN_DP * d)) / maxDock;
+        ViewGroup.LayoutParams lp = v.findViewById(R.id.card).getLayoutParams();
+        lp.width = cell - Math.round(2 * TILE_GAP_DP * d);
+        lp.height = lp.width * 9 / 16;
         return new Holder(v, listener, this);
     }
 
@@ -209,7 +170,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         h.card.setScaleX(1f);
         h.card.setScaleY(1f);
         h.card.setTranslationY(0f);
-        h.shadow.setVisibility(View.VISIBLE);
+        h.shadow.setVisibility(View.GONE);   // the dock artwork shadow is sized for square icons
         h.shadow.setScaleX(1f);
         h.shadow.setScaleY(1f);
         h.shadow.setTranslationY(0f);
