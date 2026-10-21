@@ -1,5 +1,5 @@
 param(
-  [string]$Tv = "192.168.68.112:5555",
+  [string]$Tv = $(if ($env:TV_HOST) { $env:TV_HOST } else { throw "Set TV_HOST (e.g. 192.168.1.50:5555) or pass -Tv" }),
   [string]$Adb = "C:\platform-tools\adb.exe",
   [string]$ListFile = "$PSScriptRoot\..\examples\amazon-fire-tv-aftalmo\debloat.txt",
   [string]$AppId = "com.andrewsaad.myhome",

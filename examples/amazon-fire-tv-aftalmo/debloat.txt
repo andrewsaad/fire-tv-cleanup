@@ -8,8 +8,8 @@
 #   powershell -File tools\debloat-loop.ps1 -ListFile examples\amazon-fire-tv-aftalmo\debloat.txt
 # Re-check after Amazon updates (re-disables drift):  powershell -File tools\fire-check.ps1 -Fix
 # Undo everything (re-enable each package):
-#   Get-Content examples\amazon-fire-tv-aftalmo\debloat.txt | % { ($_ -split '#')[0].Trim() } | ? { $_ } | % { C:\platform-tools\adb.exe -s 192.168.68.112:5555 shell pm enable $_ }
-#   or run C:\dev\clean_tv\backup\restore.ps1
+#   Get-Content examples\amazon-fire-tv-aftalmo\debloat.txt | % { ($_ -split '#')[0].Trim() } | ? { $_ } | % { adb -s $env:TV_HOST shell pm enable $_ }
+#   or run backup\restore.ps1 (written by tools\debloat-loop.ps1)
 # Ads, shopping, promos
 com.amazon.kso.blackbird          # sponsored screensaver and lock-screen ads
 com.amazon.sneakpeek              # ad previews
