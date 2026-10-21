@@ -52,6 +52,8 @@ public class HomeRedirectService extends AccessibilityService {
     private static final long RETRY_MS = 1500;
     private static final long COVER_MAX_MS = 8000;
     private static final long BOOT_GUARD_GAP_MS = 1500;
+    // IPTV Smarters opens a splash and then its dashboard ~2 s later at boot: keep the cover up through both.
+    private static final long BOOT_COVER_MS = 3000;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final HomeRedirectPolicy policy = new HomeRedirectPolicy();
@@ -61,6 +63,7 @@ public class HomeRedirectService extends AccessibilityService {
     private long bootGuardAt = -BOOT_GUARD_GAP_MS;
     private boolean userKeySeen;
     private View cover;
+    private long coverHoldUntil;
 
     @Override
     protected void onServiceConnected() {
@@ -74,17 +77,20 @@ public class HomeRedirectService extends AccessibilityService {
         CharSequence pkg = event.getPackageName(), cls = event.getClassName();
         if (pkg == null || cls == null) return;
         String p = pkg.toString();
+        long now = SystemClock.uptimeMillis();
         if (p.equals(getPackageName())) {   // our launcher is up: nothing left to hide or click
             cancelAttempt();
-            removeCover();
+            if (HomeRedirectPolicy.coverMayDrop(now, coverHoldUntil)) removeCover();
             return;
         }
-        long now = SystemClock.uptimeMillis();
-        if (HomeRedirectPolicy.shouldBootGuard(SystemClock.elapsedRealtime(), userKeySeen, p, getPackageName())
-                && now - bootGuardAt >= BOOT_GUARD_GAP_MS) {
-            Log.i(TAG, "boot guard: " + p + " opened itself, opening launcher");
-            bootGuardAt = now;
-            openLauncher();
+        if (HomeRedirectPolicy.shouldBootGuard(SystemClock.elapsedRealtime(), userKeySeen, p, getPackageName())) {
+            if (now - bootGuardAt >= BOOT_GUARD_GAP_MS) {
+                Log.i(TAG, "boot guard: " + p + " opened itself, opening launcher");
+                bootGuardAt = now;
+                coverHoldUntil = now + BOOT_COVER_MS;
+                showCover(BOOT_COVER_MS);
+                openLauncher();
+            }
             return;
         }
         for (String app : SETTINGS_APPS) if (p.startsWith(app)) policy.onSettingsSeen(now);
@@ -95,7 +101,7 @@ public class HomeRedirectService extends AccessibilityService {
             for (String app : SYSTEM_APPS) if (p.equals(app)) ignore = true;
             if (!ignore) {
                 cancelAttempt();
-                removeCover();
+                if (HomeRedirectPolicy.coverMayDrop(now, coverHoldUntil)) removeCover();
             }
             return;
         }
@@ -159,7 +165,7 @@ public class HomeRedirectService extends AccessibilityService {
             return;
         }
         Log.i(TAG, "tile not found: cover and start");
-        showCover();
+        showCover(COVER_MAX_MS);
         openLauncher();
     }
 
@@ -187,7 +193,7 @@ public class HomeRedirectService extends AccessibilityService {
 
     // ---- black cover -----------------------------------------------------------------------------
 
-    private void showCover() {
+    private void showCover(long maxMs) {
         handler.removeCallbacks(hideCover);
         if (cover == null) {
             WindowManager wm = getSystemService(WindowManager.class);
@@ -207,7 +213,7 @@ public class HomeRedirectService extends AccessibilityService {
                 return;
             }
         }
-        handler.postDelayed(hideCover, COVER_MAX_MS);
+        handler.postDelayed(hideCover, maxMs);
     }
 
     private void removeCover() {

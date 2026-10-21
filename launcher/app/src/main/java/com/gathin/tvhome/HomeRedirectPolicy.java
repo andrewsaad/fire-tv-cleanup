@@ -68,6 +68,11 @@ final class HomeRedirectPolicy {
         return !pkg.equals("android") && !pkg.equals("com.android.systemui");
     }
 
+    /** False while a boot-guard cover must stay up (until holdUntil), whatever windows come and go. */
+    static boolean coverMayDrop(long now, long holdUntil) {
+        return now >= holdUntil;
+    }
+
     /** Trimmed, case-insensitive exact match, so the "Home" tab does not match "My Home". */
     static boolean matchesLabel(CharSequence candidate, String label) {
         if (candidate == null || label == null) return false;

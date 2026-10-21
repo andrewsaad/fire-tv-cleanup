@@ -83,4 +83,11 @@ public class HomeRedirectPolicyTest {
             assertFalse(String.valueOf(pkg), HomeRedirectPolicy.shouldBootGuard(1000, false, pkg, OWN));
         }
     }
+
+    @Test
+    public void bootCoverHoldsUntilItsTime() {
+        assertFalse(HomeRedirectPolicy.coverMayDrop(1000, 3000));
+        assertTrue(HomeRedirectPolicy.coverMayDrop(3000, 3000));
+        assertTrue(HomeRedirectPolicy.coverMayDrop(5000, 0));   // no hold set
+    }
 }
