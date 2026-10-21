@@ -8,7 +8,7 @@ import org.junit.Test;
 
 public class AccessibilityServiceListTest {
 
-    private static final String ME = "com.andrewsaad.myhome/com.gathin.tvhome.HomeRedirectService";
+    private static final String ME = "com.gathin.tvhome/com.gathin.tvhome.HomeRedirectService";
     private static final String OTHER = "com.other/com.other.Svc";
 
     @Test
@@ -58,8 +58,8 @@ public class AccessibilityServiceListTest {
 
     @Test
     public void shortFormCountsAsSame() {
-        String shortForm = "com.andrewsaad.myhome/.HomeRedirectService";
-        String flat = "com.andrewsaad.myhome/com.andrewsaad.myhome.HomeRedirectService";
+        String shortForm = "com.gathin.tvhome/.HomeRedirectService";
+        String flat = "com.gathin.tvhome/com.gathin.tvhome.HomeRedirectService";
         assertTrue(AccessibilityServiceList.contains(shortForm, flat));
         assertEquals(OTHER, AccessibilityServiceList.remove(shortForm + ":" + OTHER, flat));
     }

@@ -7,7 +7,7 @@ import org.junit.Test;
 
 public class HomeRedirectPolicyTest {
 
-    private static final String OWN = "com.andrewsaad.myhome";
+    private static final String OWN = "com.gathin.tvhome";
 
     @Test
     public void actsOnPlainHomeEvent() {

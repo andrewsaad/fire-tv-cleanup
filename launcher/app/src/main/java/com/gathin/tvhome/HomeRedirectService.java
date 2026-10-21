@@ -36,8 +36,8 @@ import java.util.List;
  * itself during the first minutes after boot before any key is pressed (boot guard).
  *
  * Turned on and off from the launcher (Menu on the Settings button) when the app holds WRITE_SECURE_SETTINGS
- * (granted over adb: pm grant com.andrewsaad.myhome android.permission.WRITE_SECURE_SETTINGS), or over adb:
- *   settings put secure enabled_accessibility_services com.andrewsaad.myhome/com.gathin.tvhome.HomeRedirectService
+ * (granted over adb: pm grant com.gathin.tvhome android.permission.WRITE_SECURE_SETTINGS), or over adb:
+ *   settings put secure enabled_accessibility_services com.gathin.tvhome/com.gathin.tvhome.HomeRedirectService
  *   settings put secure accessibility_enabled 1
  */
 public class HomeRedirectService extends AccessibilityService {
