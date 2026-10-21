@@ -127,6 +127,29 @@ How it differs from Android TV:
 - **AirPlay has no screen of its own.** The AirPlay tile opens nothing, and casting from an iPhone
   works anyway.
 
+### Fire OS 7 (Android 9) and Windows
+
+Tested on an Amazon Fire TV AFTALMO (codename almond, Fire OS 7.7.1.5). The app installs as
+**My Home** (`com.andrewsaad.myhome`; change it with `-PlauncherApplicationId=`).
+
+- **Install from Windows:** `launcher\build-and-install.ps1` (builds through Git Bash, installs,
+  turns on the redirect, verifies it and rolls back on failure; `-DryRun` prints the commands).
+- **Pin My Home once.** Android 9 blocks background apps from opening a screen for 5 s after Home
+  is pressed, and Fire OS never passes the Home key to accessibility services. So the redirect
+  clicks the My Home tile in Amazon's apps row instead: Amazon opens it, which is not blocked, in
+  about 0.6 s. Pin it with Apps → highlight My Home → Menu → Move to front. Without the tile the
+  redirect covers Amazon's screen in black and opens My Home after the 5 s.
+- **Boot guard.** For 3 minutes after boot, until the first remote press, an app that opens itself
+  (IPTV Smarters does) is sent back to My Home. It can still flash for a moment.
+- **Loop guard.** After 3 redirects in 10 s the redirect pauses for a minute.
+- **Check after Amazon updates:** `tools\fire-check.ps1` lists packages an update turned back on
+  (`-Fix` turns them off again) and checks the redirect is still running. Fire OS turns Alexa
+  (`com.amazon.vizzini`) back on at every boot.
+- **Debloat:** `tools\debloat-loop.ps1 -ListFile examples\amazon-fire-tv-aftalmo\debloat.txt`
+  disables one package at a time with a health check and rollback.
+- **Turn it off:** `tools\fire-home-off.ps1` (`-Uninstall` also removes the app).
+- **Keep ADB reachable while working:** `tools\keepalive.ps1`.
+
 ## Supported TVs
 
 Android TV and Google TV: Xiaomi/Redmi, TCL, Hisense, Sony, OnePlus, Realme, Nvidia Shield and most
