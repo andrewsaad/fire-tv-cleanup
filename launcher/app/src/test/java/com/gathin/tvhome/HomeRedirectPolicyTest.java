@@ -85,6 +85,14 @@ public class HomeRedirectPolicyTest {
     }
 
     @Test
+    public void coverAtConnectOnlyDuringBoot() {
+        assertTrue(HomeRedirectPolicy.coverAtConnect(25_000));   // typical boot connect
+        assertTrue(HomeRedirectPolicy.coverAtConnect(HomeRedirectPolicy.BOOT_COVER_WINDOW_MS - 1));
+        assertFalse(HomeRedirectPolicy.coverAtConnect(HomeRedirectPolicy.BOOT_COVER_WINDOW_MS));
+        assertFalse(HomeRedirectPolicy.coverAtConnect(2 * 60_000));   // e.g. reinstall later in the boot window
+    }
+
+    @Test
     public void bootCoverHoldsUntilItsTime() {
         assertFalse(HomeRedirectPolicy.coverMayDrop(1000, 3000));
         assertTrue(HomeRedirectPolicy.coverMayDrop(3000, 3000));

@@ -11,11 +11,15 @@ import android.os.Looper;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.FrameLayout;
+import android.widget.TextView;
 
 import java.util.List;
 
@@ -25,14 +29,15 @@ import java.util.List;
  * Fire OS never passes the Home key to accessibility services, so this watches windows instead: when Amazon's
  * home screen comes up, this launcher opens. Android 9 blocks background activity starts for ~5 s after Home,
  * so first choice is to click this launcher's own tile on Amazon's home screen (Amazon is the resumed app, so
- * its launch is allowed and takes ~0.6 s). If the tile is not found within RETRY_MS, a black cover hides Amazon's
+ * its launch is allowed and takes ~0.6 s). If the tile is not found within RETRY_MS, a black "Loading" cover hides Amazon's
  * home and the launcher is started directly (late, but hidden). The cover goes when this launcher's window
  * appears, or after COVER_MAX_MS. While it shows, D-pad and OK keys are swallowed so blind presses do not open
  * things on Amazon's home. HomeRedirectPolicy decides when to act (settings grace, dedupe, loop guard).
  * Window content is read only when the active window belongs to Amazon's launcher.
  *
  * One exception to acting: Amazon's home screen also flashes up on the way into Settings, so a home screen that
- * follows a settings window is left alone. Also opens the launcher once at boot, and again if an app opens
+ * follows a settings window is left alone. Also opens the launcher once at boot (under the cover, which hides
+ * Amazon's fallback home screen; the ~3 s before this service connects cannot be covered), and again if an app opens
  * itself during the first minutes after boot before any key is pressed (boot guard).
  *
  * Turned on and off from the launcher (Menu on the Settings button) when the app holds WRITE_SECURE_SETTINGS
@@ -68,7 +73,9 @@ public class HomeRedirectService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         userKeySeen = false;
-        if (SystemClock.elapsedRealtime() < HomeRedirectPolicy.BOOT_WINDOW_MS) openLauncher();
+        long sinceBoot = SystemClock.elapsedRealtime();
+        if (HomeRedirectPolicy.coverAtConnect(sinceBoot)) showCover(COVER_MAX_MS);   // hide Amazon's fallback home
+        if (sinceBoot < HomeRedirectPolicy.BOOT_WINDOW_MS) openLauncher();
     }
 
     @Override
@@ -198,8 +205,14 @@ public class HomeRedirectService extends AccessibilityService {
         if (cover == null) {
             WindowManager wm = getSystemService(WindowManager.class);
             if (wm == null) return;
-            View v = new View(this);
+            FrameLayout v = new FrameLayout(this);
             v.setBackgroundColor(Color.BLACK);
+            TextView label = new TextView(this);
+            label.setText(R.string.loading);
+            label.setTextColor(Color.LTGRAY);
+            label.setTextSize(TypedValue.COMPLEX_UNIT_SP, 28);
+            v.addView(label, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
+                    FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                     WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
                     WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,

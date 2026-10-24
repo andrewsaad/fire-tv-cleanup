@@ -18,6 +18,8 @@ final class HomeRedirectPolicy {
     static final long LOOP_WINDOW_MS = 10_000;
     static final long COOLDOWN_MS = 60_000;
     static final long BOOT_WINDOW_MS = 3 * 60_000;   // since device boot
+    // measured: the service connects ~25 s after boot; later connects (reinstall, re-enable) get no cover
+    static final long BOOT_COVER_WINDOW_MS = 60_000;
 
     private static final long NEVER = Long.MIN_VALUE / 4;
 
@@ -66,6 +68,14 @@ final class HomeRedirectPolicy {
         if (pkg.equals(ownPkg) || pkg.equals("com.amazon.tv.launcher")) return false;
         if (pkg.startsWith("com.amazon.tv.settings") || pkg.startsWith("com.amazon.tv.quicksettings")) return false;
         return !pkg.equals("android") && !pkg.equals("com.android.systemui");
+    }
+
+    /**
+     * At service connect: true means this is the device's boot, so cover Amazon's fallback home screen (with
+     * "Loading") until our launcher is up. A connect later than BOOT_COVER_WINDOW_MS after boot is not a boot.
+     */
+    static boolean coverAtConnect(long elapsedRealtime) {
+        return elapsedRealtime < BOOT_COVER_WINDOW_MS;
     }
 
     /** False while a boot-guard cover must stay up (until holdUntil), whatever windows come and go. */
