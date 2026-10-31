@@ -20,6 +20,7 @@
     <!-- The More page (the last tile in the row), in this order. Missing apps are skipped; Developer options is
          always added at the end. Several names per app cover different TVs and alternatives. -->
     <string-array name="more_apps">
+        <item>com.rma.speedtesttv</item>           <!-- Internet Speed Test (main Google TV) -->
         <item>org.zwanoo.android.speedtest</item>  <!-- Speedtest by Ookla -->
         <item>com.ookla.speedtest.tv</item>         <!-- Speedtest, TV build -->
         <item>com.analiti.fastest.android</item>   <!-- Analiti speed test -->
