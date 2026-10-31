@@ -17,6 +17,21 @@
         <item>net.mbc.shahidTV</item>              <!-- MBC Shahid -->
     </string-array>
 
+    <!-- The More page (the last tile in the row), in this order. Missing apps are skipped; Developer options is
+         always added at the end. Several names per app cover different TVs and alternatives. -->
+    <string-array name="more_apps">
+        <item>org.zwanoo.android.speedtest</item>  <!-- Speedtest by Ookla -->
+        <item>com.ookla.speedtest.tv</item>         <!-- Speedtest, TV build -->
+        <item>com.analiti.fastest.android</item>   <!-- Analiti speed test -->
+        <item>org.xbmc.kodi</item>                 <!-- Kodi -->
+        <item>com.lonelycatgames.Xplore</item>     <!-- X-plore file manager -->
+        <item>com.alphainventor.filemanager</item> <!-- File Commander -->
+        <item>com.estrongs.android.pop</item>      <!-- ES File Explorer -->
+        <item>com.android.documentsui</item>       <!-- Android Files -->
+        <item>com.esaba.downloader</item>          <!-- Downloader -->
+        <item>com.iptvapp</item>                   <!-- iptv_app -->
+    </string-array>
+
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
     <string-array name="hidden_apps">
         <item>com.amazon.tv.livetv</item>
