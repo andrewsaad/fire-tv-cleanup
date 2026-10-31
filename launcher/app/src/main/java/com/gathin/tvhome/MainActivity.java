@@ -136,8 +136,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnWifi = findViewById(R.id.btnWifi);
 
         grid = findViewById(R.id.grid);
-        // One row: COLUMNS equal cells, tiles start at the left.
-        grid.setLayoutManager(new GridLayoutManager(this, COLUMNS));
+        // One row: COLUMNS app cells plus the More tile, tiles start at the left.
+        grid.setLayoutManager(new GridLayoutManager(this, COLUMNS + 1));
         grid.setItemAnimator(null);
 
         grid.setLayoutAnimation(new LayoutAnimationController(
@@ -398,6 +398,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     @Override
     public void onTileMenu(int position, View card) {
+        if (adapter.isMore(position)) return;   // no app behind it
         String pkg = adapter.pkgAt(position);
         boolean docked = adapter.isDocked(position);
         View panel = getLayoutInflater().inflate(R.layout.popup_inputs, root, false);

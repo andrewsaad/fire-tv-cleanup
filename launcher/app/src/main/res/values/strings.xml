@@ -30,4 +30,6 @@
     <string name="app_info">App Info</string>
     <string name="dock_full">Dock is full. Unpin an app first.</string>
     <string name="loading">Loading…</string>
+    <string name="more">More</string>
+    <string name="developer_options">Developer options</string>
 </resources>

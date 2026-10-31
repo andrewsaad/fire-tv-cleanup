@@ -34,7 +34,8 @@ import java.util.Set;
 
 /**
  * App tiles: one row of wide banner tiles, only the apps listed in res/values/config.xml (dock_apps), in that
- * order. Apps that are not installed are skipped. There is no app grid.
+ * order. Apps that are not installed are skipped. A More tile always ends the row and opens MoreActivity (the
+ * more_apps list). There is no app grid.
  */
 public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
 
@@ -55,6 +56,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         /** The app's TV banner, or null: then the app's own icon sits on a graphite tile. */
         final Drawable square;
         final Drawable icon;
+        /** The More tile: no app behind it (component is null). */
+        final boolean more;
         int ambient;
 
         Entry(String label, ComponentName component, Drawable square, Drawable icon) {
@@ -63,6 +66,17 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             this.pkg = component.getPackageName();
             this.square = square;
             this.icon = icon;
+            this.more = false;
+        }
+
+        /** The More tile. */
+        Entry(String label, Drawable icon) {
+            this.label = label;
+            this.component = null;
+            this.pkg = "";
+            this.square = null;
+            this.icon = icon;
+            this.more = true;
         }
     }
 
@@ -113,12 +127,14 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         items.clear();
         items.addAll(fresh);
         while (items.size() > maxDock) items.remove(items.size() - 1);
+        // The More tile does not take an app's slot: the row holds up to maxDock apps plus More.
+        items.add(new Entry(ctx.getString(R.string.more), ctx.getDrawable(R.drawable.ic_more)));
         dockCount = items.size();
         notifyDataSetChanged();
     }
 
     /** The activity's TV banner (from its leanback launch intent), else the application's, else null. */
-    private static Drawable banner(PackageManager pm, ComponentName component) {
+    static Drawable banner(PackageManager pm, ComponentName component) {
         try {
             Drawable d = pm.getActivityBanner(component);
             if (d != null) return d;
@@ -138,6 +154,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         return position >= 0 && position < dockCount;
     }
 
+    boolean isMore(int position) {
+        return position >= 0 && position < items.size() && items.get(position).more;
+    }
+
     String pkgAt(int position) {
         return position >= 0 && position < items.size() ? items.get(position).pkg : "";
     }
@@ -151,9 +171,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_app, parent, false);
-        // Wide 16:9 tile: COLUMNS across the screen between the side margins, with a gap between tiles.
+        // Wide 16:9 tile: COLUMNS + 1 (the More tile) across the screen between the side margins, with a gap
+        // between tiles. MainActivity's grid uses the same span count, so a full row always fits on one line.
         float d = v.getResources().getDisplayMetrics().density;
-        int cell = (v.getResources().getDisplayMetrics().widthPixels - Math.round(2 * SIDE_MARGIN_DP * d)) / maxDock;
+        int cell = (v.getResources().getDisplayMetrics().widthPixels - Math.round(2 * SIDE_MARGIN_DP * d)) / (maxDock + 1);
         ViewGroup.LayoutParams lp = v.findViewById(R.id.card).getLayoutParams();
         lp.width = cell - Math.round(2 * TILE_GAP_DP * d);
         lp.height = lp.width * 9 / 16;
@@ -190,6 +211,10 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     }
 
     private void launch(Entry e) {
+        if (e.more) {
+            ctx.startActivity(new Intent(ctx, MoreActivity.class));
+            return;
+        }
         Intent i = new Intent(Intent.ACTION_MAIN)
                 .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
                 .setComponent(e.component)
@@ -296,6 +321,8 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
                     listener.onTileMenu(pos, view);
                     return true;
                 }
+                // Right on the last tile (More) stays put; the focus finder would jump up to the Settings button.
+                if (keyCode == KeyEvent.KEYCODE_DPAD_RIGHT) return pos == owner.getItemCount() - 1;
                 if (keyCode != KeyEvent.KEYCODE_DPAD_UP && keyCode != KeyEvent.KEYCODE_DPAD_DOWN) return false;
                 return listener.onTileVerticalKey(pos, keyCode);
             });
