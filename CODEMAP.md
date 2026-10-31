@@ -1,5 +1,5 @@
-<!-- built-at: 357c7591d987ebd7c3c6f1d6c6ab491b954be2d3 -->
-<!-- updated: 2026-10-22 -->
+<!-- built-at: f11d303 -->
+<!-- updated: 2026-10-31 -->
 # CODEMAP
 
 ## Overview
@@ -17,15 +17,15 @@
 - Home pressed → Amazon `com.amazon.tv.launcher` HomeActivity window → TYPE_WINDOW_STATE_CHANGED → HomeRedirectService.
 - HomeRedirectPolicy decides (settings grace, dedupe, loop guard) → service finds tile labelled app_name in Amazon's apps row → ACTION_CLICK → Amazon starts MainActivity (~0.6 s).
 - Tile missing → black TYPE_ACCESSIBILITY_OVERLAY + startActivity (Android 9 delays it ~5 s after Home).
-- Boot: onServiceConnected opens MainActivity; boot guard (3 min, until first key) bounces self-starting apps under a 3 s cover.
-- MainActivity → AppAdapter → dock_apps (config.xml) → one row of banner tiles → launch app.
+- Boot: onServiceConnected opens MainActivity; within 60 s of boot it shows a "Loading..." cover over Amazon's fallback home; boot guard (3 min, until first key) bounces self-starting apps under a 3 s cover.
+- MainActivity → AppAdapter → dock_apps (config.xml, one list for Fire TV + Google TV) → one row of banner tiles + a closing More tile → MoreActivity (more_apps via MoreApps.entries, Developer options last).
 - Debloat: list file → fire-lib Read-DebloatList (never-list filter) → `pm disable-user` one by one → health check → restore line in `backup/restore.ps1`.
 
 ## Config surface
 - Env: `TV_HOST` (TV ip:port, required by .ps1 scripts and tv.py), `JAVA_HOME`, `ANDROID_HOME`.
 - Gradle: `-PlauncherApplicationId` (default `com.andrewsaad.myhome`; Java namespace stays `com.gathin.tvhome`).
 - `launcher/local.properties` (sdk.dir, optional `tvhome.userName`), git-ignored.
-- `res/values/config.xml` (dock_apps, columns), `res/values/strings.xml` (app_name must stay unique: tile matched by exact label).
+- `res/values/config.xml` (dock_apps, more_apps, hidden_apps, columns), `res/values/strings.xml` (app_name must stay unique: tile matched by exact label).
 - TV secure settings: `enabled_accessibility_services`, `accessibility_enabled` (written by scripts / setEnabled).
 - No secrets in the repo; `backup/` is git-ignored.
 
