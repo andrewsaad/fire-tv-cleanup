@@ -39,12 +39,12 @@ public class MoreAppsTest {
                 MoreApps.entries(Arrays.asList("a", " b ", "a", "b", DEV), Arrays.asList("a", "b", DEV)));
     }
 
-    /** The shipped more_apps list: Google TV with Kodi, Downloader and our IPTV app installed. */
+    /** The shipped more_apps list: Google TV with Netflix, Kodi, Downloader and our IPTV app installed. */
     @Test
     public void configuredListOnAGoogleTv() throws Exception {
         List<String> configured = configArray("more_apps");
         assertTrue(configured.contains("com.iptvapp"));
-        assertEquals(Arrays.asList("org.xbmc.kodi", "com.esaba.downloader", "com.iptvapp", DEV),
+        assertEquals(Arrays.asList("com.netflix.ninja", "org.xbmc.kodi", "com.esaba.downloader", "com.iptvapp", DEV),
                 MoreApps.entries(configured, Arrays.asList("com.iptvapp", "com.esaba.downloader", "org.xbmc.kodi", "com.netflix.ninja")));
     }
 
