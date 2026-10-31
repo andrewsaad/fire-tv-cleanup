@@ -5,12 +5,16 @@
 -->
 <resources>
 
-    <!-- The one row of tiles, in this order (at most "columns"). Missing apps are skipped. No other apps are shown. -->
+    <!-- The one row of tiles, in this order (at most "columns"). Missing apps are skipped. No other apps are shown.
+         One list for every TV: Fire TV and Google TV package names side by side. -->
     <string-array name="dock_apps">
-        <item>com.amazon.firetv.youtube</item>
+        <item>com.amazon.firetv.youtube</item>     <!-- YouTube, Fire TV -->
+        <item>com.google.android.youtube.tv</item> <!-- YouTube, Google TV -->
         <item>com.plexapp.android</item>
         <item>com.nst.iptvsmarterstvbox</item>
         <item>com.genraltv.app</item>
+        <item>com.ottplay.ottplay</item>           <!-- Televizo (IPTV) -->
+        <item>net.mbc.shahidTV</item>              <!-- MBC Shahid -->
     </string-array>
 
     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
