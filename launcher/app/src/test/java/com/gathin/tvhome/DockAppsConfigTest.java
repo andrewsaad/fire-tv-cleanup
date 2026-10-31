@@ -40,14 +40,14 @@ public class DockAppsConfigTest {
     }
 
     @Test
-    public void fireTvRowIsUnchanged() throws Exception {
-        assertEquals(Arrays.asList("com.amazon.firetv.youtube", "com.plexapp.android", "com.nst.iptvsmarterstvbox", "com.genraltv.app"),
+    public void fireTvShowsPlexYouTubeSmartersGenral() throws Exception {
+        assertEquals(Arrays.asList("com.plexapp.android", "com.amazon.firetv.youtube", "com.nst.iptvsmarterstvbox", "com.genraltv.app"),
                 row(Arrays.asList("com.genraltv.app", "com.nst.iptvsmarterstvbox", "com.plexapp.android", "com.amazon.firetv.youtube", "com.netflix.ninja")));
     }
 
     @Test
-    public void googleTvShowsYouTubePlexTelevizoShahid() throws Exception {
-        assertEquals(Arrays.asList("com.google.android.youtube.tv", "com.plexapp.android", "com.ottplay.ottplay", "net.mbc.shahidTV"),
+    public void googleTvShowsTelevizoPlexYouTubeShahid() throws Exception {
+        assertEquals(Arrays.asList("com.ottplay.ottplay", "com.plexapp.android", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
                 row(Arrays.asList("net.mbc.shahidTV", "com.ottplay.ottplay", "com.plexapp.android", "com.google.android.youtube.tv", "com.netflix.ninja")));
     }
 }
