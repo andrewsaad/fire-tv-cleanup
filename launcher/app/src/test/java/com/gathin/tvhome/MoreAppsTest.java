@@ -48,6 +48,13 @@ public class MoreAppsTest {
                 MoreApps.entries(configured, Arrays.asList("com.iptvapp", "com.esaba.downloader", "org.xbmc.kodi", "com.netflix.ninja")));
     }
 
+    /** Televizo left the home row for StreamVault; it heads the More page where installed. */
+    @Test
+    public void televizoIsFirstOnMorePage() throws Exception {
+        assertEquals(Arrays.asList("com.ottplay.ottplay", "com.netflix.ninja", DEV),
+                MoreApps.entries(configArray("more_apps"), Arrays.asList("com.netflix.ninja", "com.ottplay.ottplay")));
+    }
+
     private static List<String> configArray(String name) throws Exception {
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
                 .parse(new File("src/main/res/values/config.xml"));

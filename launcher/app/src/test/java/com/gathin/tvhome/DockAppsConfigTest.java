@@ -46,8 +46,16 @@ public class DockAppsConfigTest {
     }
 
     @Test
-    public void googleTvShowsTelevizoPlexYouTubeShahid() throws Exception {
-        assertEquals(Arrays.asList("com.ottplay.ottplay", "com.plexapp.android", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
-                row(Arrays.asList("net.mbc.shahidTV", "com.ottplay.ottplay", "com.plexapp.android", "com.google.android.youtube.tv", "com.netflix.ninja")));
+    public void googleTvShowsStreamVaultPlexYouTubeShahid() throws Exception {
+        assertEquals(Arrays.asList("com.streamvault.app", "com.plexapp.android", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
+                row(Arrays.asList("net.mbc.shahidTV", "com.ottplay.ottplay", "com.streamvault.app", "com.plexapp.android",
+                        "com.google.android.youtube.tv", "com.netflix.ninja")));
+    }
+
+    @Test
+    public void googleTvWithoutStreamVaultSkipsTelevizo() throws Exception {
+        // Televizo now lives on the More page only.
+        assertEquals(Arrays.asList("com.plexapp.android", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
+                row(Arrays.asList("net.mbc.shahidTV", "com.ottplay.ottplay", "com.plexapp.android", "com.google.android.youtube.tv")));
     }
 }
