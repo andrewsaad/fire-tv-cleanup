@@ -6,6 +6,8 @@
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
 
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Weather next to the date (Open-Meteo). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <!-- Lets the launcher turn its Home redirect on and off from the TV; granted over adb (pm grant). -->
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"

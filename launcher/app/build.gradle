@@ -13,6 +13,9 @@ android {
 
     defaultConfig {
         resValue 'string', 'user_name', localProps.getProperty('tvhome.userName', '')
+        // Optional weather location (decimal degrees); empty hides the weather. Kept out of git like the name.
+        resValue 'string', 'weather_lat', localProps.getProperty('tvhome.weatherLat', '')
+        resValue 'string', 'weather_lon', localProps.getProperty('tvhome.weatherLon', '')
         // Override with -PlauncherApplicationId=... (the id on the TV differs from the Java package below).
         applicationId project.findProperty('launcherApplicationId') ?: 'com.andrewsaad.myhome'
         minSdk 26

@@ -131,6 +131,32 @@
                         android:fontVariationSettings="'wght' 400"
                         android:letterSpacing="0.14"
                         android:textAllCaps="true" />
+
+                    <View
+                        android:id="@+id/weatherDivider"
+                        android:layout_width="1dp"
+                        android:layout_height="26dp"
+                        android:layout_gravity="bottom"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginEnd="16dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="#33FFFFFF"
+                        android:visibility="gone" />
+
+                    <!-- Current weather, filled in code; hidden until the first reading. -->
+                    <TextView
+                        android:id="@+id/weather"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:layout_marginBottom="9dp"
+                        android:textColor="#A6FFFFFF"
+                        android:textSize="14sp"
+                        android:fontFamily="@font/open_sans"
+                        android:fontVariationSettings="'wght' 400"
+                        android:letterSpacing="0.14"
+                        android:textAllCaps="true"
+                        android:visibility="gone" />
                 </LinearLayout>
             </LinearLayout>
 

@@ -21,6 +21,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.SpannableString;
 import android.text.Spanned;
@@ -47,6 +48,11 @@ import androidx.dynamicanimation.animation.SpringForce;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -78,6 +84,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private int ambientColor;
     private boolean heroShown;
     private TextView greeting;
+    private TextView weatherText;
+    private View weatherDivider;
+    private String weatherUrl;
+    private long weatherAt;          // when the last fetch started (elapsed ms), 0 = never
     private ImageView bgPhoto;
     private int bgRes;
     private TextView btnWifi;
@@ -108,6 +118,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             updateGreeting();
             updateBackground();
             updateWifiLabel();
+            updateWeather();
             handler.postDelayed(this, MINUTE_MS);
         }
     };
@@ -132,6 +143,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         ambient.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or, ob) ->
                 ambientGlow.setGradientRadius((r - l) * 0.62f));
         greeting = findViewById(R.id.greeting);
+        weatherText = findViewById(R.id.weather);
+        weatherDivider = findViewById(R.id.weatherDivider);
+        weatherUrl = Weather.url(getString(R.string.weather_lat), getString(R.string.weather_lon));
         bgPhoto = findViewById(R.id.bgPhoto);
         btnWifi = findViewById(R.id.btnWifi);
 
@@ -213,6 +227,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         updateGreeting();
         updateBackground();
         updateWifiLabel();
+        updateWeather();
         handler.postDelayed(minuteTick, MINUTE_MS);
         ConnectivityManager cm = getSystemService(ConnectivityManager.class);
         if (cm != null) cm.registerDefaultNetworkCallback(networkCallback);
@@ -495,6 +510,51 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         String text = getString(GREETINGS[dayPart()]);
         String name = getString(R.string.user_name).trim();
         greeting.setText(name.isEmpty() ? text : text + ", " + name);
+    }
+
+    /**
+     * Fetches the weather off the main thread, at most every 30 min. A failed fetch keeps the last reading and
+     * is retried on the next minute tick (e.g. no network yet right after boot).
+     */
+    private void updateWeather() {
+        if (weatherUrl.isEmpty()) return;
+        long now = SystemClock.elapsedRealtime();
+        if (weatherAt != 0 && now - weatherAt < Weather.REFRESH_MS) return;
+        weatherAt = now;
+        String url = weatherUrl;
+        new Thread(() -> {
+            Weather w = Weather.parse(fetch(url));
+            if (w == null) {
+                handler.post(() -> weatherAt = 0);
+                return;
+            }
+            String text = w.text();
+            handler.post(() -> {
+                weatherText.setText(text);
+                weatherText.setVisibility(View.VISIBLE);
+                weatherDivider.setVisibility(View.VISIBLE);
+            });
+        }, "weather").start();
+    }
+
+    /** GET a small text body; null on any failure. */
+    private static String fetch(String url) {
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL(url).openConnection();
+            c.setConnectTimeout(10_000);
+            c.setReadTimeout(10_000);
+            if (c.getResponseCode() != HttpURLConnection.HTTP_OK) return null;
+            try (InputStream in = c.getInputStream(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+                byte[] buf = new byte[4096];
+                for (int n; (n = in.read(buf)) > 0 && out.size() < 64 * 1024; ) out.write(buf, 0, n);
+                return out.toString(StandardCharsets.UTF_8.name());
+            }
+        } catch (Exception e) {
+            return null;
+        } finally {
+            if (c != null) c.disconnect();
+        }
     }
 
     private void updateBackground() {
