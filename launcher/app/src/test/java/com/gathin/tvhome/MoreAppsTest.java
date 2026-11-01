@@ -55,6 +55,13 @@ public class MoreAppsTest {
                 MoreApps.entries(configArray("more_apps"), Arrays.asList("com.netflix.ninja", "com.ottplay.ottplay")));
     }
 
+    /** Plex left the main Google TV row for Jellyfin; it heads the More page. */
+    @Test
+    public void plexIsFirstOnMorePage() throws Exception {
+        assertEquals(Arrays.asList("com.plexapp.android", "com.ottplay.ottplay", "org.xbmc.kodi", DEV),
+                MoreApps.entries(configArray("more_apps"), Arrays.asList("org.xbmc.kodi", "com.ottplay.ottplay", "com.plexapp.android")));
+    }
+
     private static List<String> configArray(String name) throws Exception {
         Document doc = DocumentBuilderFactory.newInstance().newDocumentBuilder()
                 .parse(new File("src/main/res/values/config.xml"));

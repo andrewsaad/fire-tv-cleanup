@@ -6,20 +6,23 @@
 <resources>
 
     <!-- The one row of tiles, in this order (at most "columns"). Missing apps are skipped. No other apps are shown.
-         One list for every TV: Fire TV and Google TV package names side by side. -->
+         One list for every TV: Fire TV and Google TV package names side by side. "a|b" is one tile: the first
+         installed of a and b (our surround-upmix builds first, then the store app). -->
     <string-array name="dock_apps">
-        <item>com.streamvault.app</item>           <!-- StreamVault (IPTV) -->
-        <item>com.plexapp.android</item>
+        <item>com.streamvault.app.debug|com.streamvault.app</item>                <!-- StreamVault (IPTV) -->
+        <item>org.jellyfin.androidtv.debug|org.jellyfin.androidtv</item>          <!-- Jellyfin -->
         <item>com.amazon.firetv.youtube</item>     <!-- YouTube, Fire TV -->
         <item>com.google.android.youtube.tv</item> <!-- YouTube, Google TV -->
         <item>com.nst.iptvsmarterstvbox</item>
         <item>com.genraltv.app</item>
         <item>net.mbc.shahidTV</item>              <!-- MBC Shahid -->
+        <item>com.plexapp.android</item>           <!-- Plex: on the row only where fewer apps are installed -->
     </string-array>
 
     <!-- The More page (the last tile in the row), in this order. Missing apps are skipped; Developer options is
          always added at the end. Several names per app cover different TVs and alternatives. -->
     <string-array name="more_apps">
+        <item>com.plexapp.android</item>           <!-- Plex (left the Google TV row for Jellyfin) -->
         <item>com.ottplay.ottplay</item>           <!-- Televizo (IPTV, replaced by StreamVault on the row) -->
         <item>com.netflix.ninja</item>            <!-- Netflix (kept on the main Google TV only) -->
         <item>com.rma.speedtesttv</item>           <!-- Internet Speed Test (main Google TV) -->

@@ -34,28 +34,34 @@ public class DockAppsConfigTest {
             for (int j = 0; j < items.getLength(); j++) pinned.add(items.item(j).getTextContent().trim());
         }
         int columns = Integer.parseInt(doc.getElementsByTagName("integer").item(0).getTextContent().trim());
-        List<String> out = new ArrayList<>();
-        for (String p : pinned) if (installed.contains(p) && out.size() < columns) out.add(p);
-        return out;
+        return DockApps.row(pinned, installed, columns);
     }
 
     @Test
-    public void fireTvShowsPlexYouTubeSmartersGenral() throws Exception {
-        assertEquals(Arrays.asList("com.plexapp.android", "com.amazon.firetv.youtube", "com.nst.iptvsmarterstvbox", "com.genraltv.app"),
+    public void fireTvShowsYouTubeSmartersGenralPlex() throws Exception {
+        assertEquals(Arrays.asList("com.amazon.firetv.youtube", "com.nst.iptvsmarterstvbox", "com.genraltv.app", "com.plexapp.android"),
                 row(Arrays.asList("com.genraltv.app", "com.nst.iptvsmarterstvbox", "com.plexapp.android", "com.amazon.firetv.youtube", "com.netflix.ninja")));
     }
 
     @Test
-    public void googleTvShowsStreamVaultPlexYouTubeShahid() throws Exception {
-        assertEquals(Arrays.asList("com.streamvault.app", "com.plexapp.android", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
-                row(Arrays.asList("net.mbc.shahidTV", "com.ottplay.ottplay", "com.streamvault.app", "com.plexapp.android",
-                        "com.google.android.youtube.tv", "com.netflix.ninja")));
+    public void mainGoogleTvShowsUpmixStreamVaultJellyfinYouTubeShahid() throws Exception {
+        // Both StreamVault builds installed: only the surround-upmix one gets the tile; Plex moves to More.
+        assertEquals(Arrays.asList("com.streamvault.app.debug", "org.jellyfin.androidtv.debug", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
+                row(Arrays.asList("net.mbc.shahidTV", "com.ottplay.ottplay", "com.streamvault.app", "com.streamvault.app.debug",
+                        "org.jellyfin.androidtv.debug", "com.plexapp.android", "com.google.android.youtube.tv", "com.netflix.ninja")));
     }
 
     @Test
-    public void googleTvWithoutStreamVaultSkipsTelevizo() throws Exception {
-        // Televizo now lives on the More page only.
-        assertEquals(Arrays.asList("com.plexapp.android", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
+    public void googleTvWithStoreBuildsUsesThem() throws Exception {
+        assertEquals(Arrays.asList("com.streamvault.app", "org.jellyfin.androidtv", "com.google.android.youtube.tv", "net.mbc.shahidTV"),
+                row(Arrays.asList("net.mbc.shahidTV", "com.streamvault.app", "org.jellyfin.androidtv", "com.plexapp.android",
+                        "com.google.android.youtube.tv")));
+    }
+
+    @Test
+    public void googleTvWithoutStreamVaultOrJellyfinKeepsPlexAndSkipsTelevizo() throws Exception {
+        // Televizo lives on the More page only.
+        assertEquals(Arrays.asList("com.google.android.youtube.tv", "net.mbc.shahidTV", "com.plexapp.android"),
                 row(Arrays.asList("net.mbc.shahidTV", "com.ottplay.ottplay", "com.plexapp.android", "com.google.android.youtube.tv")));
     }
 }

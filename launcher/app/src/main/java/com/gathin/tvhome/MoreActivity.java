@@ -82,6 +82,11 @@ public class MoreActivity extends Activity {
         List<String> configured = Arrays.asList(getResources().getStringArray(R.array.more_apps));
         Set<String> installed = new HashSet<>();
         for (String pkg : configured) if (launchIntent(pm, pkg.trim()) != null) installed.add(pkg.trim());
+        // An app already on the home row (e.g. Plex where fewer apps are installed) is not repeated here.
+        List<String> dock = Arrays.asList(getResources().getStringArray(R.array.dock_apps));
+        Set<String> dockInstalled = new HashSet<>();
+        for (String pkg : DockApps.packages(dock)) if (launchIntent(pm, pkg) != null) dockInstalled.add(pkg);
+        installed.removeAll(DockApps.row(dock, dockInstalled, getResources().getInteger(R.integer.columns)));
         items.clear();
         for (String key : MoreApps.entries(configured, installed)) {
             if (MoreApps.DEVELOPER_OPTIONS.equals(key)) {

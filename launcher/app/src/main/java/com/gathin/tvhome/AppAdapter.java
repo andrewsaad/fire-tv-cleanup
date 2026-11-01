@@ -89,7 +89,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
     private static final int SIDE_MARGIN_DP = 56, TILE_GAP_DP = 10;
     private final int maxDock;
     private int dockCount;
-    /** Packages to show, in order (config.xml dock_apps), including any that are not installed right now. */
+    /** Tiles to show, in order (config.xml dock_apps, alternatives as "a|b"), including apps not installed now. */
     private final List<String> pinned = new ArrayList<>();
     /** Never shown as tiles (res/values/config.xml, hidden_apps). */
     private final Set<String> hidden;
@@ -107,12 +107,15 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
         PackageManager pm = ctx.getPackageManager();
         Intent probe = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER);
         List<ResolveInfo> found = pm.queryIntentActivities(probe, 0);
+        Set<String> installed = new HashSet<>();
+        for (ResolveInfo ri : found) if (ri.activityInfo != null) installed.add(ri.activityInfo.packageName);
+        List<String> shown = DockApps.resolve(pinned, installed);
         List<Entry> fresh = new ArrayList<>();
         Set<String> seen = new HashSet<>();
         for (ResolveInfo ri : found) {
             if (ri.activityInfo == null) continue;
             String pkg = ri.activityInfo.packageName;
-            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg) || !pinned.contains(pkg)) continue;
+            if (pkg.equals(ctx.getPackageName()) || hidden.contains(pkg) || !shown.contains(pkg)) continue;
             // One tile per app: skip extra launcher entries (AirPlay registers three).
             Intent main = pm.getLeanbackLaunchIntentForPackage(pkg);
             ComponentName mainComponent = main != null ? main.getComponent() : null;
@@ -123,7 +126,7 @@ public class AppAdapter extends RecyclerView.Adapter<AppAdapter.Holder> {
             ComponentName component = new ComponentName(pkg, ri.activityInfo.name);
             fresh.add(new Entry(label, component, banner(pm, component), icon));
         }
-        Collections.sort(fresh, (a, b) -> Integer.compare(pinned.indexOf(a.pkg), pinned.indexOf(b.pkg)));
+        Collections.sort(fresh, (a, b) -> Integer.compare(shown.indexOf(a.pkg), shown.indexOf(b.pkg)));
         items.clear();
         items.addAll(fresh);
         while (items.size() > maxDock) items.remove(items.size() - 1);
