@@ -18,7 +18,7 @@ android {
         resValue 'string', 'weather_lon', localProps.getProperty('tvhome.weatherLon', '')
         // Override with -PlauncherApplicationId=... (the id on the TV differs from the Java package below).
         applicationId project.findProperty('launcherApplicationId') ?: 'com.andrewsaad.myhome'
-        minSdk 26
+        minSdk 25   // Fire TV Stick 4K (AFTMM) runs Fire OS 6 / Android 7.1
         targetSdk 29
         versionCode 2
         versionName '2.0'

@@ -1,6 +1,7 @@
 package com.gathin.tvhome;
 
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.service.dreams.DreamService;
@@ -9,6 +10,8 @@ import android.view.Gravity;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextClock;
+
+import androidx.annotation.ChecksSdkIntAtLeast;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -112,8 +115,10 @@ public class PhotoDream extends DreamService {
         c.setFormat24Hour("HH:mm");
         c.setTextColor(0xE6FFFFFF);
         c.setTextSize(TypedValue.COMPLEX_UNIT_SP, 30);
-        c.setTypeface(getResources().getFont(R.font.open_sans));
-        c.setFontVariationSettings("'wght' 300");
+        if (hasFontResources()) {
+            c.setTypeface(getResources().getFont(R.font.open_sans));
+            c.setFontVariationSettings("'wght' 300");
+        }
         c.setShadowLayer(12f, 0f, 2f, 0x99000000);
         float dp = getResources().getDisplayMetrics().density;
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -121,5 +126,15 @@ public class PhotoDream extends DreamService {
         lp.setMargins(0, 0, (int) (48 * dp), (int) (36 * dp));
         c.setLayoutParams(lp);
         return c;
+    }
+
+    /** Font resources and variable weights arrived in Android 8; the Fire TV Stick 4K runs 7.1 and keeps the system font. */
+    @ChecksSdkIntAtLeast(api = Build.VERSION_CODES.O)
+    static boolean hasFontResources() {
+        return hasFontResources(Build.VERSION.SDK_INT);
+    }
+
+    static boolean hasFontResources(int sdkInt) {
+        return sdkInt >= Build.VERSION_CODES.O;
     }
 }
