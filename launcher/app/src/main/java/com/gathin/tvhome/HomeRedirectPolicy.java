@@ -41,6 +41,14 @@ final class HomeRedirectPolicy {
         return t;
     }
 
+    /**
+     * Milliseconds left of the settings grace (0 when none). A home screen left alone for the grace is checked
+     * again when it ends: if Amazon's home is still in front, it was a real stop there, not a flash.
+     */
+    long settingsGraceLeft(long now) {
+        return Math.max(0, SETTINGS_GRACE_MS - (now - settingsSeenAt));
+    }
+
     /** Amazon's home screen came up. True means act now (and the act is recorded). */
     boolean shouldAct(long now) {
         if (now - settingsSeenAt < SETTINGS_GRACE_MS) return false;

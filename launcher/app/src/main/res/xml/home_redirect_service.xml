@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Window changes from all apps (to spot Amazon's home screen and this launcher). Reads screen content only
-     on Amazon's home screen: the app tile labels, to click this launcher's tile. Key filtering is on only so
+<!-- Window changes from all apps (to spot Amazon's home screen and this launcher), and focus changes (a Home or
+     D-pad press while Amazon's home is already in front opens no window, only moves focus). Reads screen content
+     only on Amazon's home screen: the app tile labels, to click this launcher's tile. Key filtering is on only so
      D-pad keys can be swallowed while the black cover hides Amazon's home. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-    android:accessibilityEventTypes="typeWindowStateChanged"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeViewFocused"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:notificationTimeout="0"
     android:accessibilityFlags="flagRequestFilterKeyEvents"

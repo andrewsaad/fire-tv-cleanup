@@ -1,5 +1,6 @@
 package com.gathin.tvhome;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -21,6 +22,18 @@ public class HomeRedirectPolicyTest {
         assertFalse(p.shouldAct(10_200));
         assertFalse(p.shouldAct(11_999));
         assertTrue(p.shouldAct(12_000));
+    }
+
+    @Test
+    public void settingsGraceLeftCountsDownSoTheHomeScreenIsRechecked() {
+        HomeRedirectPolicy p = new HomeRedirectPolicy();
+        assertEquals(0, p.settingsGraceLeft(1000));
+        p.onSettingsSeen(10_000);
+        assertEquals(1800, p.settingsGraceLeft(10_200));
+        assertFalse(p.shouldAct(10_200));
+        // the recheck fires once the grace is over, and acting is then allowed
+        assertEquals(0, p.settingsGraceLeft(12_000));
+        assertTrue(p.shouldAct(12_100));
     }
 
     @Test
