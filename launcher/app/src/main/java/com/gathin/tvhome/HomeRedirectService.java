@@ -37,8 +37,10 @@ import java.util.List;
  *
  * One exception to acting: Amazon's home screen also flashes up on the way into Settings, so a home screen that
  * follows a settings window is left alone, and checked again when that grace ends (still in front = a real stop).
- * A Home or D-pad press while Amazon's home is already in front opens no window, so a focus change there counts
- * as the home screen coming up too. Also opens the launcher once at boot (under the cover, which hides
+ * A D-pad press while Amazon's home is already in front opens no window, so a focus change there counts as the
+ * home screen coming up too; a Home press there sends nothing at all, so while Amazon's home is in front it is
+ * looked at again every STUCK_RECHECK_MS, and if an earlier act left it there the launcher is started directly
+ * under the cover. Also opens the launcher once at boot (under the cover, which hides
  * Amazon's fallback home screen; the ~3 s before this service connects cannot be covered), and again if an app opens
  * itself during the first minutes after boot before any key is pressed (boot guard).
  *
@@ -62,18 +64,22 @@ public class HomeRedirectService extends AccessibilityService {
     // IPTV Smarters opens a splash and then its dashboard ~2 s later at boot: keep the cover up through both.
     private static final long BOOT_COVER_MS = 3000;
     private static final long RECHECK_SLACK_MS = 100;
+    private static final long STUCK_RECHECK_MS = 2500;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final HomeRedirectPolicy policy = new HomeRedirectPolicy();
     private final Runnable clickTile = this::tryClickTile;
     private final Runnable hideCover = this::removeCover;
     private boolean onAmazonHome;   // the last app window (not system UI) was Amazon's home screen
-    // Amazon's home left alone for the settings grace and still in front when it ends: a real stop there.
+    // False until the first app window event since connecting: a reinstall or re-enable while Amazon's home is
+    // already up sends no window event for it, and the active window is often not readable yet at connect.
+    private boolean appWindowSeen;
+    // An act was made and neither our launcher nor another app has come up since.
+    private boolean actPending;
+    // Amazon's home must not stay up: it is looked at again while it is in front (a Home press there sends no
+    // event at all, and a tile click can report success without opening anything, e.g. right after boot).
     private final Runnable recheckHome = () -> {
-        if (onAmazonHome) {
-            Log.i(TAG, "still on Amazon's home after the settings grace");
-            onAmazonHomeShown(SystemClock.uptimeMillis(), true);
-        }
+        if (onAmazonHome) onAmazonHomeShown(SystemClock.uptimeMillis(), false);
     };
     private long attemptStart;
     private long bootGuardAt = -BOOT_GUARD_GAP_MS;
@@ -84,6 +90,9 @@ public class HomeRedirectService extends AccessibilityService {
     @Override
     protected void onServiceConnected() {
         userKeySeen = false;
+        Log.i(TAG, "connected");
+        onAmazonHome = false;
+        appWindowSeen = false;
         long sinceBoot = SystemClock.elapsedRealtime();
         if (HomeRedirectPolicy.coverAtConnect(sinceBoot)) showCover(COVER_MAX_MS);   // hide Amazon's fallback home
         if (sinceBoot < HomeRedirectPolicy.BOOT_WINDOW_MS) openLauncher();
@@ -92,8 +101,8 @@ public class HomeRedirectService extends AccessibilityService {
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_FOCUSED) {
-            // Home (or any D-pad press) while Amazon's home is already in front opens no window, only moves focus.
-            if (onAmazonHome && cover == null && AMAZON_LAUNCHER.contentEquals(event.getPackageName())) {
+            // A D-pad press while Amazon's home is already in front opens no window, only moves focus.
+            if ((onAmazonHome || !appWindowSeen) && cover == null && AMAZON_LAUNCHER.contentEquals(event.getPackageName())) {
                 onAmazonHomeShown(SystemClock.uptimeMillis(), false);
             }
             return;
@@ -105,7 +114,10 @@ public class HomeRedirectService extends AccessibilityService {
         long now = SystemClock.uptimeMillis();
         boolean systemWindow = false;
         for (String app : SYSTEM_APPS) if (p.equals(app)) systemWindow = true;
-        if (!systemWindow) onAmazonHome = AMAZON_LAUNCHER.equals(p) && cls.toString().contains(AMAZON_HOME);
+        if (!systemWindow) {
+            appWindowSeen = true;
+            onAmazonHome = AMAZON_LAUNCHER.equals(p) && cls.toString().contains(AMAZON_HOME);
+        }
         if (p.equals(getPackageName())) {   // our launcher is up: nothing left to hide or click
             cancelAttempt();
             if (HomeRedirectPolicy.coverMayDrop(now, coverHoldUntil)) removeCover();
@@ -139,17 +151,23 @@ public class HomeRedirectService extends AccessibilityService {
         long graceLeft = policy.settingsGraceLeft(now);
         boolean act = policy.shouldAct(now);
         if (policy.takeLoopTripped()) Log.w(TAG, "redirected too often: paused for a minute");
+        handler.removeCallbacks(recheckHome);
+        handler.postDelayed(recheckHome, graceLeft > 0 ? graceLeft + RECHECK_SLACK_MS : STUCK_RECHECK_MS);
         if (!act) {
-            if (graceLeft > 0) {
-                handler.removeCallbacks(recheckHome);
-                handler.postDelayed(recheckHome, graceLeft + RECHECK_SLACK_MS);
-            }
             if (logLeftAlone) Log.i(TAG, "home screen: left alone");
             return;
         }
-        Log.i(TAG, "home screen: opening launcher");
-        attemptStart = now;
         handler.removeCallbacks(clickTile);
+        if (actPending) {
+            // The last act left us on Amazon's home: the tile did not take, so start directly under the cover.
+            Log.i(TAG, "still on Amazon's home: cover and start");
+            showCover(COVER_MAX_MS);
+            openLauncher();
+            return;
+        }
+        Log.i(TAG, "home screen: opening launcher");
+        actPending = true;
+        attemptStart = now;
         handler.post(clickTile);
     }
 
@@ -189,6 +207,7 @@ public class HomeRedirectService extends AccessibilityService {
     private void cancelAttempt() {
         handler.removeCallbacks(clickTile);
         handler.removeCallbacks(recheckHome);
+        actPending = false;
     }
 
     /** Clicks our tile on Amazon's home screen; retries every RETRY_EVERY_MS, then falls back to the cover. */
