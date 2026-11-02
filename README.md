@@ -150,6 +150,15 @@ Tested on an Amazon Fire TV AFTALMO (codename almond, Fire OS 7.7.1.5). The app 
 - **Turn it off:** `tools\fire-home-off.ps1` (`-Uninstall` also removes the app).
 - **Keep ADB reachable while working:** `tools\keepalive.ps1`.
 
+### Fire OS 6 (Android 7.1)
+
+Tested on a Fire TV Stick 4K AFTMM (Fire OS 6.7.1.1). My Home runs (the screensaver clock keeps the
+system font, since font resources need Android 8), but **the Home redirect does not work**: Amazon's
+accessibility manager only binds its own services, and `settings put` silently drops writes to
+`enabled_accessibility_services`. `build-and-install.ps1` reports "service not bound" and rolls
+back, leaving the app installed. Pin My Home to the front of Amazon's apps (Apps → highlight My
+Home → Menu → Move to front) so Home, right twice, select opens it.
+
 ## Supported TVs
 
 Android TV and Google TV: Xiaomi/Redmi, TCL, Hisense, Sony, OnePlus, Realme, Nvidia Shield and most
