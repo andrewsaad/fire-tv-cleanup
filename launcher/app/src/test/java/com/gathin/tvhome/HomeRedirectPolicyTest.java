@@ -106,6 +106,14 @@ public class HomeRedirectPolicyTest {
     }
 
     @Test
+    public void ownWindowIsStaleOnlyWhileAmazonsLauncherIsInFront() {
+        assertTrue(HomeRedirectPolicy.ownWindowWasStale("com.amazon.tv.launcher"));
+        assertFalse(HomeRedirectPolicy.ownWindowWasStale(OWN));
+        assertFalse(HomeRedirectPolicy.ownWindowWasStale("com.amazon.tv.settings.v2"));
+        assertFalse(HomeRedirectPolicy.ownWindowWasStale(null));   // window not readable yet: do nothing
+    }
+
+    @Test
     public void bootCoverHoldsUntilItsTime() {
         assertFalse(HomeRedirectPolicy.coverMayDrop(1000, 3000));
         assertTrue(HomeRedirectPolicy.coverMayDrop(3000, 3000));

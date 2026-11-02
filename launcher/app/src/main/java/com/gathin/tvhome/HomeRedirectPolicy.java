@@ -91,6 +91,15 @@ final class HomeRedirectPolicy {
         return now >= holdUntil;
     }
 
+    /**
+     * Checked a moment after our launcher's window event: true when the window actually in front is still Amazon's
+     * launcher. The event from an earlier tile click can arrive late, after a second Home press already brought
+     * Amazon's home back, and would otherwise cancel every recheck.
+     */
+    static boolean ownWindowWasStale(CharSequence activePackage) {
+        return activePackage != null && "com.amazon.tv.launcher".contentEquals(activePackage);
+    }
+
     /** Trimmed, case-insensitive exact match, so the "Home" tab does not match "My Home". */
     static boolean matchesLabel(CharSequence candidate, String label) {
         if (candidate == null || label == null) return false;

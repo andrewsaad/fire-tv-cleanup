@@ -65,6 +65,7 @@ public class HomeRedirectService extends AccessibilityService {
     private static final long BOOT_COVER_MS = 3000;
     private static final long RECHECK_SLACK_MS = 100;
     private static final long STUCK_RECHECK_MS = 2500;
+    private static final long OWN_WINDOW_VERIFY_MS = 1000;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final HomeRedirectPolicy policy = new HomeRedirectPolicy();
@@ -80,6 +81,16 @@ public class HomeRedirectService extends AccessibilityService {
     // event at all, and a tile click can report success without opening anything, e.g. right after boot).
     private final Runnable recheckHome = () -> {
         if (onAmazonHome) onAmazonHomeShown(SystemClock.uptimeMillis(), false);
+    };
+    // Our launcher's window event can be a late one from an earlier tile click, arriving after a second Home press
+    // brought Amazon's home back: look at the window really in front, and if it is Amazon's, start directly.
+    private final Runnable verifyOwnWindow = () -> {
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root == null || !HomeRedirectPolicy.ownWindowWasStale(root.getPackageName())) return;
+        Log.i(TAG, "late launcher event: Amazon's home still in front");
+        onAmazonHome = true;
+        actPending = true;
+        onAmazonHomeShown(SystemClock.uptimeMillis(), false);
     };
     private long attemptStart;
     private long bootGuardAt = -BOOT_GUARD_GAP_MS;
@@ -121,6 +132,7 @@ public class HomeRedirectService extends AccessibilityService {
         if (p.equals(getPackageName())) {   // our launcher is up: nothing left to hide or click
             cancelAttempt();
             if (HomeRedirectPolicy.coverMayDrop(now, coverHoldUntil)) removeCover();
+            handler.postDelayed(verifyOwnWindow, OWN_WINDOW_VERIFY_MS);
             return;
         }
         if (HomeRedirectPolicy.shouldBootGuard(SystemClock.elapsedRealtime(), userKeySeen, p, getPackageName())) {
@@ -207,6 +219,7 @@ public class HomeRedirectService extends AccessibilityService {
     private void cancelAttempt() {
         handler.removeCallbacks(clickTile);
         handler.removeCallbacks(recheckHome);
+        handler.removeCallbacks(verifyOwnWindow);
         actPending = false;
     }
 
